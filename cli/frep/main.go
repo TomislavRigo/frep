@@ -9,17 +9,23 @@ import (
 )
 
 func main() {
+	argLen := len(os.Args)
+	if argLen < 2 {
+		fmt.Printf("Missing pattern")
+		os.Exit(1)
+	}
 	pattern := os.Args[1]
-	rawPath := os.Args[2]
-
-	for _, arg := range os.Args {
-		fmt.Println(arg)
+	rawPath := "."
+	if argLen == 3 {
+		rawPath = os.Args[2]
 	}
 
 	path, err := filepath.Abs(filepath.Clean(rawPath))
 	if err != nil {
-		panic(err)
+		fmt.Println("Path invalid")
+		os.Exit(1)
 	}
 
 	scanner.ScanAndMatch(path, pattern)
+	os.Exit(0)
 }
