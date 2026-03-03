@@ -5,26 +5,59 @@ name: Go
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "pipeline" ]
+  pull_request:
+    branches: [ "master", "pipeline" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - uses: actions/setup-go@v4
-      with:
-        go-version: '1.25'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.25"
 
-    - name: Build binary
-      run: |
-        mkdir -p dist
-        go build -o dist/app .
+      - name: Build binary (auto-detect module + main)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: go-build
-        path: dist/app
+          # 1) Find module root
+          MOD_FILE="$(find . -name go.mod -print | head -n 1 || true)"
+          if [[ -z "${MOD_FILE}" ]]; then
+            echo "ERROR: No go.mod found in repo."
+            echo "Files:"
+            ls -la
+            exit 1
+          fi
+          MOD_DIR="$(dirname "${MOD_FILE}")"
+          echo "Module dir: ${MOD_DIR}"
+
+          pushd "${MOD_DIR}" >/dev/null
+
+          # 2) Find a main package
+          MAIN_PKG="$(go list -f '{{if eq .Name "main"}}{{.ImportPath}}{{end}}' ./... | head -n 1 || true)"
+          if [[ -z "${MAIN_PKG}" ]]; then
+            echo "ERROR: No main package found under ${MOD_DIR}."
+            echo "Packages:"
+            go list ./... || true
+            exit 1
+          fi
+          echo "Main package: ${MAIN_PKG}"
+
+          # 3) Build to workspace dist/
+          go build -o "${GITHUB_WORKSPACE}/dist/app" "${MAIN_PKG}"
+
+          popd >/dev/null
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-build
+          path: dist/app
+          retention-days: 7
