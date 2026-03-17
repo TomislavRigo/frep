@@ -6,6 +6,8 @@ I wanted to make is as close to `grep` as possible for muscle memory, but there 
 
 Since it is recursive by nature and kind clunky to use it can be: **F**uzzy **R**ecursive **E**valuation of **P**atterns
 
+<img width="1167" height="156" alt="image" src="https://github.com/user-attachments/assets/6ca8419e-12e0-4c3d-8abd-6dc430092cbe" />
+
 # Installation
 
 1. Clone the repository
